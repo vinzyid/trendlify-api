@@ -1,0 +1,109 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id               Int       @id @default(autoincrement())
+  name             String
+  email            String    @unique
+  emailVerifiedAt  DateTime? @map("email_verified_at")
+  password         String
+  role             String    @default("user")
+  businessCategory String?   @map("business_category")
+  regionCode       String?   @map("region_code")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+
+  aiInsights   AiInsight[]
+  competitors  CompetitorWatchlist[]
+
+  @@map("users")
+}
+
+model Category {
+  id        Int      @id @default(autoincrement())
+  slug      String   @unique
+  name      String
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  snapshots TrendSnapshot[]
+
+  @@map("categories")
+}
+
+model TrendSnapshot {
+  id             Int      @id @default(autoincrement())
+  categoryId     Int?     @map("category_id")
+  entityType     String   @map("entity_type")
+  entityLabel    String   @map("entity_label")
+  regionCode     String   @default("ID") @map("region_code")
+  trendScore     Int      @map("trend_score")
+  audienceAgeMin Int?     @map("audience_age_min")
+  audienceAgeMax Int?     @map("audience_age_max")
+  metadata       Json?
+  capturedAt     DateTime @default(now()) @map("captured_at")
+
+  category    Category?         @relation(fields: [categoryId], references: [id])
+  predictions TrendPrediction[]
+
+  @@index([regionCode, capturedAt])
+  @@index([categoryId, capturedAt])
+  @@map("trend_snapshots")
+}
+
+model TrendPrediction {
+  id                 Int      @id @default(autoincrement())
+  trendSnapshotId    Int      @map("trend_snapshot_id")
+  horizonDays        Int      @map("horizon_days")
+  predictedGrowthPct Float    @map("predicted_growth_pct")
+  confidenceScore    Int      @map("confidence_score")
+  modelVersion       String   @default("v1-heuristic") @map("model_version")
+  features           Json?
+  narration          String?
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+
+  trendSnapshot TrendSnapshot @relation(fields: [trendSnapshotId], references: [id], onDelete: Cascade)
+
+  @@unique([trendSnapshotId, horizonDays])
+  @@map("trend_predictions")
+}
+
+model AiInsight {
+  id          Int      @id @default(autoincrement())
+  userId      Int?     @map("user_id")
+  insightType String   @map("insight_type")
+  context     Json?
+  summary     String
+  structured  Json?
+  provider    String   @default("gemini")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  user User? @relation(fields: [userId], references: [id])
+
+  @@index([userId, createdAt])
+  @@map("ai_insights")
+}
+
+model CompetitorWatchlist {
+  id             Int      @id @default(autoincrement())
+  userId         Int      @map("user_id")
+  competitorName String   @map("competitor_name")
+  channel        String?
+  notes          String?
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@map("competitor_watchlists")
+}

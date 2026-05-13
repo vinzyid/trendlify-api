@@ -1,0 +1,28 @@
+# Dependencies
+node_modules/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Database
+prisma/dev.db
+prisma/dev.db-journal
+prisma/*.db
+
+# Build output
+dist/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Claude Code / AI assistant files
+CLAUDE.md
+AGENTS.md
+.claude/
+
+# OS
+.DS_Store
+Thumbs.db
