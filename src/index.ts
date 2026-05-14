@@ -17,7 +17,10 @@ import adminRoutes       from "./routes/admin";
 
 const app = express();
 
-app.use(cors({ origin: process.env.FRONTEND_URL ?? "http://localhost:3000", credentials: true }));
+const allowedOrigins = process.env.FRONTEND_URL
+  ? process.env.FRONTEND_URL.split(",").map((s) => s.trim())
+  : true; // allow all origins (mobile app + any client)
+app.use(cors({ origin: allowedOrigins, credentials: true }));
 app.use(express.json());
 
 const api = express.Router();
