@@ -11,26 +11,26 @@ export async function simulateTrends(rounds = 1): Promise<number> {
 
   let updated = 0;
   for (let r = 0; r < rounds; r++) {
-    for (const s of snapshots) {
-      const delta = Math.floor(Math.random() * 14) - 6; // ±6 range
+    const now = new Date();
+    const newSnapshots = snapshots.map(s => {
+      const delta = Math.floor(Math.random() * 14) - 6;
       const resistance = s.trendScore >= 85 ? -Math.floor(Math.random() * 3) : 0;
       const newScore = Math.min(99, Math.max(1, s.trendScore + delta + resistance));
+      return {
+        categoryId: s.categoryId,
+        entityType: s.entityType,
+        entityLabel: s.entityLabel,
+        regionCode: s.regionCode,
+        trendScore: newScore,
+        audienceAgeMin: s.audienceAgeMin,
+        audienceAgeMax: s.audienceAgeMax,
+        metadata: s.metadata !== null ? s.metadata : undefined,
+        capturedAt: now,
+      };
+    });
 
-      await prisma.trendSnapshot.create({
-        data: {
-          categoryId: s.categoryId,
-          entityType: s.entityType,
-          entityLabel: s.entityLabel,
-          regionCode: s.regionCode,
-          trendScore: newScore,
-          audienceAgeMin: s.audienceAgeMin,
-          audienceAgeMax: s.audienceAgeMax,
-          metadata: s.metadata !== null ? s.metadata : undefined,
-          capturedAt: new Date(),
-        },
-      });
-      updated++;
-    }
+    await prisma.trendSnapshot.createMany({ data: newSnapshots });
+    updated += newSnapshots.length;
   }
 
   return updated;
