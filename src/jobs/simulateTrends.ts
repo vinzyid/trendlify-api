@@ -13,9 +13,17 @@ export async function simulateTrends(rounds = 1): Promise<number> {
   for (let r = 0; r < rounds; r++) {
     const now = new Date();
     const newSnapshots = snapshots.map(s => {
-      const delta = Math.floor(Math.random() * 14) - 6;
-      const resistance = s.trendScore >= 85 ? -Math.floor(Math.random() * 3) : 0;
-      const newScore = Math.min(99, Math.max(1, s.trendScore + delta + resistance));
+      // Symmetric delta: -6 to +6 (avg = 0, no upward drift)
+      const delta = Math.floor(Math.random() * 13) - 6;
+      // Mean reversion: pull back toward natural range (40–75)
+      const score = s.trendScore;
+      const reversion =
+        score >= 88 ? -(Math.floor(Math.random() * 6) + 3) :  // -3 to -8
+        score >= 75 ? -(Math.floor(Math.random() * 4) + 1) :  // -1 to -4
+        score <= 20 ?  (Math.floor(Math.random() * 4) + 1) :  // +1 to +4
+        score <= 35 ?  (Math.floor(Math.random() * 3))     :  //  0 to +2
+        0;
+      const newScore = Math.min(99, Math.max(1, score + delta + reversion));
       return {
         categoryId: s.categoryId,
         entityType: s.entityType,

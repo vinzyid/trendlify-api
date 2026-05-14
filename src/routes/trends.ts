@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { latestSnapshots } from "../lib/trendRepository";
+import { getTrendProfile } from "../services/trendProfile";
 
 const router = Router();
 
@@ -11,6 +12,14 @@ router.get("/", async (req, res) => {
 
   const data = await latestSnapshots({ regionCode, categorySlug: category, entityType, limit });
   return res.json({ data });
+});
+
+router.get("/profile", async (req, res) => {
+  const keyword = (req.query.keyword as string ?? "").trim();
+  if (!keyword) return res.status(400).json({ error: "keyword required" });
+
+  const profile = await getTrendProfile(keyword);
+  return res.json({ keyword, profile });
 });
 
 export default router;

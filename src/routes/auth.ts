@@ -45,6 +45,25 @@ router.post("/login", async (req, res) => {
   });
 });
 
+router.put("/change-password", requireAuth, async (req, res) => {
+  const { current_password, new_password } = req.body;
+  if (!current_password || !new_password)
+    return res.status(422).json({ message: "Password lama dan baru wajib diisi." });
+  if (new_password.length < 8)
+    return res.status(422).json({ message: "Password baru minimal 8 karakter." });
+
+  const user = await prisma.user.findUnique({ where: { id: req.user!.id } });
+  if (!user) return res.status(404).json({ message: "User tidak ditemukan." });
+
+  const valid = await bcrypt.compare(current_password, user.password);
+  if (!valid)
+    return res.status(422).json({ message: "Password lama tidak sesuai." });
+
+  const hashed = await bcrypt.hash(new_password, 12);
+  await prisma.user.update({ where: { id: user.id }, data: { password: hashed } });
+  return res.json({ message: "Password berhasil diperbarui." });
+});
+
 router.post("/logout", requireAuth, (_req, res) => {
   // JWT is stateless — client just discards the token
   res.json({ message: "Logged out" });
