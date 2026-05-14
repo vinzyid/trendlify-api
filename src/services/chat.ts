@@ -7,24 +7,18 @@ Kalau pertanyaan tidak terkait kuliner atau bisnis UMKM, arahkan kembali dengan 
 
 type Message = { role: "user" | "assistant"; content: string };
 
-async function callGroq(message: string, history: Message[]): Promise<string | null> {
-  const key = process.env.GROQ_API_KEY;
-  if (!key) return null;
-  const model = process.env.GROQ_MODEL ?? "llama-3.3-70b-versatile";
+async function callOpenAICompat(
+  url: string,
+  key: string,
+  model: string,
+  messages: object[],
+  extraHeaders: Record<string, string> = {}
+): Promise<string | null> {
   try {
-    const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+    const res = await fetch(url, {
       method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
-      body: JSON.stringify({
-        model,
-        messages: [
-          { role: "system", content: SYSTEM },
-          ...history,
-          { role: "user", content: message },
-        ],
-        max_tokens: 450,
-        temperature: 0.75,
-      }),
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}`, ...extraHeaders },
+      body: JSON.stringify({ model, messages, max_tokens: 450, temperature: 0.75 }),
       signal: AbortSignal.timeout(30000),
     });
     if (!res.ok) return null;
@@ -33,6 +27,28 @@ async function callGroq(message: string, history: Message[]): Promise<string | n
   } catch {
     return null;
   }
+}
+
+async function callOpenRouter(message: string, history: Message[]): Promise<string | null> {
+  const key = process.env.OPENROUTER_API_KEY;
+  if (!key) return null;
+  const model = process.env.OPENROUTER_MODEL ?? "meta-llama/llama-3.3-70b-instruct:free";
+  const messages = [{ role: "system", content: SYSTEM }, ...history, { role: "user", content: message }];
+  return callOpenAICompat(
+    "https://openrouter.ai/api/v1/chat/completions",
+    key,
+    model,
+    messages,
+    { "HTTP-Referer": "https://trendlify.app", "X-Title": "Trendlify" }
+  );
+}
+
+async function callGroq(message: string, history: Message[]): Promise<string | null> {
+  const key = process.env.GROQ_API_KEY;
+  if (!key) return null;
+  const model = process.env.GROQ_MODEL ?? "llama-3.3-70b-versatile";
+  const messages = [{ role: "system", content: SYSTEM }, ...history, { role: "user", content: message }];
+  return callOpenAICompat("https://api.groq.com/openai/v1/chat/completions", key, model, messages);
 }
 
 async function callGemini(message: string, history: Message[]): Promise<string | null> {
@@ -70,6 +86,7 @@ async function callGemini(message: string, history: Message[]): Promise<string |
 
 export async function chat(message: string, history: Message[] = []): Promise<string> {
   return (
+    (await callOpenRouter(message, history)) ??
     (await callGroq(message, history)) ??
     (await callGemini(message, history)) ??
     "Maaf, AI sedang sibuk. Coba lagi dalam beberapa saat ya! 🙏"

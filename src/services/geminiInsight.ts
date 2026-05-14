@@ -128,6 +128,38 @@ function cleanOutput(text: string): string {
   return cleaned.join("\n").trim();
 }
 
+async function callOpenRouter(prompt: string): Promise<string | null> {
+  const key = process.env.OPENROUTER_API_KEY;
+  if (!key) return null;
+  const model = process.env.OPENROUTER_MODEL ?? "meta-llama/llama-3.3-70b-instruct:free";
+  try {
+    const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${key}`,
+        "HTTP-Referer": "https://trendlify.app",
+        "X-Title": "Trendlify",
+      },
+      body: JSON.stringify({
+        model,
+        messages: [
+          { role: "system", content: SYSTEM_PROMPT },
+          { role: "user", content: prompt },
+        ],
+        max_tokens: 3500,
+        temperature: 0.8,
+      }),
+      signal: AbortSignal.timeout(60000),
+    });
+    if (!res.ok) return null;
+    const json = await res.json() as Record<string, any>;
+    return json?.choices?.[0]?.message?.content ?? null;
+  } catch {
+    return null;
+  }
+}
+
 async function callGemini(prompt: string): Promise<string | null> {
   const key = process.env.GEMINI_API_KEY;
   if (!key) return null;
@@ -213,8 +245,13 @@ export async function generateMarketInsight(
   const prompt = buildPrompt(context);
   const keyword = (context.trending_product ?? context.entity_label ?? "produk kuliner") as string;
 
-  let text = await callGemini(prompt);
-  let provider = "gemini";
+  let text = await callOpenRouter(prompt);
+  let provider = "openrouter";
+
+  if (!text) {
+    text = await callGemini(prompt);
+    provider = "gemini";
+  }
 
   if (!text) {
     text = await callGroq(prompt);
