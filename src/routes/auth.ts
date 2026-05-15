@@ -69,9 +69,13 @@ router.put("/profile", requireAuth, async (req, res) => {
   if (!name || !String(name).trim())
     return res.status(422).json({ message: "Nama wajib diisi." });
 
+  const { business_category } = req.body;
   const user = await prisma.user.update({
     where: { id: req.user!.id },
-    data: { name: String(name).trim() },
+    data: {
+      name: String(name).trim(),
+      ...(business_category !== undefined && { businessCategory: business_category || null }),
+    },
     select: { id: true, name: true, email: true, role: true, businessCategory: true, regionCode: true },
   });
   return res.json({

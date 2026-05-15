@@ -11,7 +11,6 @@ import regionsRoutes     from "./routes/regions";
 import chatRoutes        from "./routes/chat";
 import insightsRoutes    from "./routes/insights";
 import predictionsRoutes from "./routes/predictions";
-import competitorsRoutes from "./routes/competitors";
 import ingestRoutes      from "./routes/ingest";
 import adminRoutes       from "./routes/admin";
 
@@ -32,7 +31,6 @@ api.use("/regions",     regionsRoutes);
 api.use("/chat",        chatRoutes);
 api.use("/insights",    insightsRoutes);
 api.use("/predictions", predictionsRoutes);
-api.use("/competitors", competitorsRoutes);
 api.use("/ingest",      ingestRoutes);
 api.use("/admin",       adminRoutes);
 

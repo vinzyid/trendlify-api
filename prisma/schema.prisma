@@ -21,7 +21,6 @@ model User {
   updatedAt        DateTime  @updatedAt @map("updated_at")
 
   aiInsights   AiInsight[]
-  competitors  CompetitorWatchlist[]
 
   @@map("users")
 }
@@ -93,17 +92,3 @@ model AiInsight {
   @@map("ai_insights")
 }
 
-model CompetitorWatchlist {
-  id             Int      @id @default(autoincrement())
-  userId         Int      @map("user_id")
-  competitorName String   @map("competitor_name")
-  channel        String?
-  notes          String?
-  createdAt      DateTime @default(now()) @map("created_at")
-  updatedAt      DateTime @updatedAt @map("updated_at")
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId, createdAt])
-  @@map("competitor_watchlists")
-}
